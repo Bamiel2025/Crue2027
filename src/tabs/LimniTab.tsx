@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import CarteBassin from "../components/CarteBassin";
 import Limnigramme, { type SerieAffichee } from "../components/Limnigramme";
 import { Etete, Icone, ICONES } from "../components/ui";
+import { VerrouCorrection } from "../components/VerrouCorrection";
 import {
   EVENTS,
   STATIONS,
@@ -184,6 +185,10 @@ export default function LimniTab({ valide, reussies, onReussite, onValide, toast
   const [pic, setPic] = useState(false);
   const [mesure, setMesure] = useState(false);
   const [reveler, setReveler] = useState(false);
+  const [ficheDeverrouille, setFicheDeverrouille] = useState(false);
+  const [propagationDeverrouille, setPropagationDeverrouille] = useState(false);
+  const [comparaisonDeverrouille, setComparaisonDeverrouille] = useState(false);
+  const [reflexeDeverrouille, setReflexeDeverrouille] = useState(false);
   const [qIdx, setQIdx] = useState(0);
   const [saisie, setSaisie] = useState("");
   const [choix, setChoix] = useState<number | null>(null);
@@ -482,121 +487,154 @@ export default function LimniTab({ valide, reussies, onReussite, onValide, toast
                 ))}
               </div>
             </div>
-            <div className="boite">
-              <div className="flex items-center justify-between gap-2">
-                <h3 className="!mb-0 !text-[0.95rem]">Fiche d’identité — {station.nom}</h3>
-                <button type="button" className="btn btn--fantome btn--petit" onClick={() => setReveler((v) => !v)}>
-                  <Icone d={ICONES.oeil} className="h-4 w-4" /> {reveler ? "Masquer" : "Révéler"}
-                </button>
+            <VerrouCorrection
+              titre={`Fiche d’identité — ${station.nom} (Verrouillée)`}
+              hint="Cette fiche récapitule les valeurs calculées clés (pic, base, vitesse). Elle est verrouillée par le code professeur (2027) pour encourager l'observation autonome sur le graphique."
+              isUnlocked={ficheDeverrouille}
+              onUnlock={() => setFicheDeverrouille(true)}
+            >
+              <div className="boite">
+                <div className="flex items-center justify-between gap-2">
+                  <h3 className="!mb-0 !text-[0.95rem]">Fiche d’identité — {station.nom}</h3>
+                  <button type="button" className="btn btn--fantome btn--petit" onClick={() => setReveler((v) => !v)}>
+                    <Icone d={ICONES.oeil} className="h-4 w-4" /> {reveler ? "Masquer" : "Révéler"}
+                  </button>
+                </div>
+                <p className="legende m-0 mb-2 text-[0.72rem]">Essaie d’abord de lire ces valeurs sur le graphique, puis vérifie.</p>
+                <table className="w-full text-[0.8rem]">
+                  <tbody>
+                    {[
+                      ["Hauteur de base (avant)", `${fr(stats.base)} m`],
+                      ["Hauteur maximale (pic)", `${fr(stats.pic)} m`],
+                      ["Heure du pic", fmtDateHeure(dateAt(ev, stats.tPic))],
+                      ["Temps de montée", ev.type === "crue" ? fmtDuree(stats.tempsMontee) : "—"],
+                      ["Vitesse de montée max", ev.type === "crue" ? `${fr(stats.vitesseMax)} m/h (${Math.round(stats.vitesseMax * 100)} cm/h)` : "—"],
+                      ["Durée de débordement", stats.dureeDebordement > 0 ? fmtDuree(stats.dureeDebordement) : "aucun débordement"],
+                      ["Retour proche de la base", stats.tRetourBase != null && ev.type === "crue" ? `${fmtDuree(stats.tRetourBase - stats.tPic)} après le pic` : "—"],
+                    ].map(([k, v]) => (
+                      <tr key={k} className="border-b border-dashed border-[var(--filet)] last:border-0">
+                        <td className="py-1 pr-2 text-encre-2">{k}</td>
+                        <td className={cn("py-1 text-right font-mono font-bold transition", !reveler && "select-none blur-[5px]")}>{v}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-              <p className="legende m-0 mb-2 text-[0.72rem]">Essaie d’abord de lire ces valeurs sur le graphique, puis vérifie.</p>
-              <table className="w-full text-[0.8rem]">
-                <tbody>
-                  {[
-                    ["Hauteur de base (avant)", `${fr(stats.base)} m`],
-                    ["Hauteur maximale (pic)", `${fr(stats.pic)} m`],
-                    ["Heure du pic", fmtDateHeure(dateAt(ev, stats.tPic))],
-                    ["Temps de montée", ev.type === "crue" ? fmtDuree(stats.tempsMontee) : "—"],
-                    ["Vitesse de montée max", ev.type === "crue" ? `${fr(stats.vitesseMax)} m/h (${Math.round(stats.vitesseMax * 100)} cm/h)` : "—"],
-                    ["Durée de débordement", stats.dureeDebordement > 0 ? fmtDuree(stats.dureeDebordement) : "aucun débordement"],
-                    ["Retour proche de la base", stats.tRetourBase != null && ev.type === "crue" ? `${fmtDuree(stats.tRetourBase - stats.tPic)} après le pic` : "—"],
-                  ].map(([k, v]) => (
-                    <tr key={k} className="border-b border-dashed border-[var(--filet)] last:border-0">
-                      <td className="py-1 pr-2 text-encre-2">{k}</td>
-                      <td className={cn("py-1 text-right font-mono font-bold transition", !reveler && "select-none blur-[5px]")}>{v}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            </VerrouCorrection>
           </div>
         </div>
       </div>
 
       {/* ----- propagation ----- */}
       {ev.type === "crue" && propagation.length > 1 && (
+        <VerrouCorrection
+          titre="4. L’onde de crue se propage de l’amont vers l’aval (Verrouillé)"
+          hint="Ce tableau détaille le calcul des délais de propagation et vitesses de l'onde entre stations. Il est verrouillé par le code professeur (2027) pour laisser aux élèves le temps de comparer les courbes eux-mêmes."
+          isUnlocked={propagationDeverrouille}
+          onUnlock={() => setPropagationDeverrouille(true)}
+          className="mb-4"
+        >
+          <div className="boite mb-4">
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <h3 className="!mb-0">4. L’onde de crue se propage de l’amont vers l’aval</h3>
+              <span className="rounded-full bg-vert/15 px-2.5 py-0.5 font-mono text-[0.74rem] font-bold text-vert">
+                DÉVERROUILLÉ ✓
+              </span>
+            </div>
+            <p className="legende m-0 mb-2">
+              Pour le même épisode, le pic passe d’abord aux stations amont, puis aux stations aval. Ce délai est le <b>temps de propagation</b> : c’est lui qui permet aux
+              services de prévision d’alerter Aubagne et Marseille avant l’arrivée de l’eau.
+            </p>
+            <div className="overflow-x-auto">
+              <table className="tabrisque">
+                <thead>
+                  <tr>
+                    <th>Station (amont → aval)</th>
+                    <th>km</th>
+                    <th>Pic (m)</th>
+                    <th>Heure du pic</th>
+                    <th>Délai depuis la station précédente</th>
+                    <th>Vitesse de l’onde</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {propagation.map((r) => (
+                    <tr key={r.s.id}>
+                      <td>
+                        <span className="mr-1.5 inline-block h-2.5 w-2.5 rounded-full align-middle" style={{ background: r.s.couleur }} />
+                        {r.s.nom}
+                      </td>
+                      <td className="font-mono">{r.s.pk}</td>
+                      <td className="font-mono">{fr(r.st.pic)}</td>
+                      <td className="font-mono">{fmtHeure(dateAt(ev, r.st.tPic))}</td>
+                      <td className="font-mono">{r.lag > 0 ? `+ ${fmtDuree(r.lag)}` : "—"}</td>
+                      <td className="font-mono">{r.vitesse ? `≈ ${fr(r.vitesse, 1)} km/h` : "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="astuce mt-2">
+              💡 Active « Comparer les stations » au-dessus du graphique pour superposer les courbes : les pics se décalent vers la droite quand on descend la rivière, et la
+              hauteur augmente car les affluents apportent de l’eau.
+            </p>
+          </div>
+        </VerrouCorrection>
+      )}
+
+      {/* ----- comparaison des crues ----- */}
+      <VerrouCorrection
+        titre="5. Trois crues, trois « signatures » — station d’Aubagne (Verrouillé)"
+        hint="Ce tableau synthétise et compare les caractéristiques des crues (pics, temps de montée, débordements). Il est verrouillé par le code professeur (2027) pour privilégier la réflexion guidée."
+        isUnlocked={comparaisonDeverrouille}
+        onUnlock={() => setComparaisonDeverrouille(true)}
+        className="mb-4"
+      >
         <div className="boite mb-4">
-          <h3>4. L’onde de crue se propage de l’amont vers l’aval</h3>
-          <p className="legende m-0 mb-2">
-            Pour le même épisode, le pic passe d’abord aux stations amont, puis aux stations aval. Ce délai est le <b>temps de propagation</b> : c’est lui qui permet aux
-            services de prévision d’alerter Aubagne et Marseille avant l’arrivée de l’eau.
-          </p>
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <h3 className="!mb-0">5. Trois crues, trois « signatures » — station d’Aubagne</h3>
+            <span className="rounded-full bg-vert/15 px-2.5 py-0.5 font-mono text-[0.74rem] font-bold text-vert">
+              DÉVERROUILLÉ ✓
+            </span>
+          </div>
           <div className="overflow-x-auto">
             <table className="tabrisque">
               <thead>
                 <tr>
-                  <th>Station (amont → aval)</th>
-                  <th>km</th>
-                  <th>Pic (m)</th>
-                  <th>Heure du pic</th>
-                  <th>Délai depuis la station précédente</th>
-                  <th>Vitesse de l’onde</th>
+                  <th>Épisode</th>
+                  <th>Type de pluie</th>
+                  <th>Pic</th>
+                  <th>Temps de montée</th>
+                  <th>Vitesse max</th>
+                  <th>Débordement</th>
+                  <th>Période de retour</th>
                 </tr>
               </thead>
               <tbody>
-                {propagation.map((r) => (
-                  <tr key={r.s.id}>
+                {comparaisonCrues.map(({ e, st }) => (
+                  <tr key={e.id} className={cn(e.id === evId && "bg-bleu/10")}>
                     <td>
-                      <span className="mr-1.5 inline-block h-2.5 w-2.5 rounded-full align-middle" style={{ background: r.s.couleur }} />
-                      {r.s.nom}
+                      <button type="button" className="text-left font-semibold text-bleu underline-offset-2 hover:underline" onClick={() => { setEvId(e.id); setStId("aubagne"); setCompare(false); }}>
+                        {e.titre}
+                      </button>
                     </td>
-                    <td className="font-mono">{r.s.pk}</td>
-                    <td className="font-mono">{fr(r.st.pic)}</td>
-                    <td className="font-mono">{fmtHeure(dateAt(ev, r.st.tPic))}</td>
-                    <td className="font-mono">{r.lag > 0 ? `+ ${fmtDuree(r.lag)}` : "—"}</td>
-                    <td className="font-mono">{r.vitesse ? `≈ ${fr(r.vitesse, 1)} km/h` : "—"}</td>
+                    <td className="text-left">{e.id === "kirk2024" ? "orage intense, court" : e.id === "monica2024" ? "pluie longue, modérée" : "pluies soutenues"}</td>
+                    <td className="font-mono">{fr(st.pic)} m</td>
+                    <td className="font-mono">{fmtDuree(st.tempsMontee)}</td>
+                    <td className="font-mono">{Math.round(st.vitesseMax * 100)} cm/h</td>
+                    <td className="font-mono">{st.dureeDebordement > 0 ? fmtDuree(st.dureeDebordement) : "non"}</td>
+                    <td className="font-mono">{e.T}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-          <p className="astuce mt-2">
-            💡 Active « Comparer les stations » au-dessus du graphique pour superposer les courbes : les pics se décalent vers la droite quand on descend la rivière, et la
-            hauteur augmente car les affluents apportent de l’eau.
+          <p className="legende m-0 mt-2">
+            Plus une crue est <b>rare</b> (période de retour longue), plus elle est <b>intense</b>. Mais la forme de la courbe dépend aussi du <b>type de pluie</b> : orage bref →
+            crue éclair ; pluie longue → crue lente et volumineuse.
           </p>
         </div>
-      )}
-
-      {/* ----- comparaison des crues ----- */}
-      <div className="boite mb-4">
-        <h3>5. Trois crues, trois « signatures » — station d’Aubagne</h3>
-        <div className="overflow-x-auto">
-          <table className="tabrisque">
-            <thead>
-              <tr>
-                <th>Épisode</th>
-                <th>Type de pluie</th>
-                <th>Pic</th>
-                <th>Temps de montée</th>
-                <th>Vitesse max</th>
-                <th>Débordement</th>
-                <th>Période de retour</th>
-              </tr>
-            </thead>
-            <tbody>
-              {comparaisonCrues.map(({ e, st }) => (
-                <tr key={e.id} className={cn(e.id === evId && "bg-bleu/10")}>
-                  <td>
-                    <button type="button" className="text-left font-semibold text-bleu underline-offset-2 hover:underline" onClick={() => { setEvId(e.id); setStId("aubagne"); setCompare(false); }}>
-                      {e.titre}
-                    </button>
-                  </td>
-                  <td className="text-left">{e.id === "kirk2024" ? "orage intense, court" : e.id === "monica2024" ? "pluie longue, modérée" : "pluies soutenues"}</td>
-                  <td className="font-mono">{fr(st.pic)} m</td>
-                  <td className="font-mono">{fmtDuree(st.tempsMontee)}</td>
-                  <td className="font-mono">{Math.round(st.vitesseMax * 100)} cm/h</td>
-                  <td className="font-mono">{st.dureeDebordement > 0 ? fmtDuree(st.dureeDebordement) : "non"}</td>
-                  <td className="font-mono">{e.T}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <p className="legende m-0 mt-2">
-          Plus une crue est <b>rare</b> (période de retour longue), plus elle est <b>intense</b>. Mais la forme de la courbe dépend aussi du <b>type de pluie</b> : orage bref →
-          crue éclair ; pluie longue → crue lente et volumineuse.
-        </p>
-      </div>
+      </VerrouCorrection>
 
       {/* ----- questions ----- */}
       <div className="grid gap-4 lg:grid-cols-[1.2fr_1fr]">
@@ -691,11 +729,32 @@ export default function LimniTab({ valide, reussies, onReussite, onValide, toast
           <div className="boite">
             <h3>🚨 Question réflexe</h3>
             <p className="legende m-0 mb-1">
-              Pourquoi la hauteur d’eau peut-elle monter aussi vite dans une petite rivière comme l’Huveaune ? (2-3 lignes — pense aux pentes, aux sols imperméables des villes,
+              Pourquoi la hauteur d’eau peut-elle monter aussi vite dans un fleuve comme l’Huveaune ? (2-3 lignes — pense aux pentes, aux sols imperméables des villes,
               à la taille du bassin)
             </p>
             <textarea rows={4} value={reflexe} onChange={(e) => setReflexe(e.target.value)} placeholder="Ta réponse… (enregistrée automatiquement, pas de note automatique)" />
             <p className="legende m-0 mt-1 text-[0.72rem]">{reflexe.length > 0 ? `${reflexe.trim().split(/\s+/).filter(Boolean).length} mots — sauvegardé` : "Rien d’écrit pour l’instant."}</p>
+
+            <div className="mt-3 border-t border-dashed border-[var(--filet)] pt-3">
+              <VerrouCorrection
+                titre="Éléments de réponse — Question réflexe"
+                hint="La réponse type du professeur est verrouillée par le code (2027) pour te laisser formuler tes propres explications d'abord."
+                isUnlocked={reflexeDeverrouille}
+                onUnlock={() => setReflexeDeverrouille(true)}
+              >
+                <div className="rounded-lg border border-[var(--color-vert)] bg-vert/10 p-3 text-[0.84rem] text-encre">
+                  <div className="mb-1 flex items-center gap-1.5 font-bold text-vert">
+                    <Icone d={ICONES.check} className="h-4 w-4" /> Éléments de réponse attendus :
+                  </div>
+                  <ul className="m-0 list-disc pl-4 leading-relaxed">
+                    <li><b>Pentes fortes des versants</b> (massif de la Sainte-Baume et collines avoisinantes) favorisant un ruissellement très rapide.</li>
+                    <li><b>Taille modérée du bassin versant (≈ 520 km²)</b> : le temps de concentration des eaux jusqu'au lit principal est très court (quelques heures).</li>
+                    <li><b>Forte imperméabilisation des sols</b> dans la vallée et vers l'aval (urbanisation dense d'Aubagne à Marseille, routes, zones d'activités).</li>
+                    <li><b>Sols préalablement saturés</b> par les pluies d'automne, empêchant l'infiltration naturelle de l'eau.</li>
+                  </ul>
+                </div>
+              </VerrouCorrection>
+            </div>
           </div>
         </div>
       </div>

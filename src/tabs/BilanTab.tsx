@@ -1,9 +1,77 @@
-import { Etete } from "../components/ui";
+import { useState } from "react";
+import { Etete, Icone, ICONES } from "../components/ui";
 
 export default function BilanTab({ deverrouille }: { deverrouille: boolean }) {
+  const [pleinEcran, setPleinEcran] = useState(false);
+
   return (
     <section className="etape">
       <Etete num="Bilan-correction" titre="L’essentiel à retenir — Cycle 4" valide={deverrouille} tamponTexte="CORRIGÉ ✓" />
+
+      {/* Infographie : Comprendre les risques de crues */}
+      <div className="boite mb-5">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h3 className="!mb-0">Infographie — Comprendre les risques de crues</h3>
+            <p className="legende m-0">Document de référence illustrant le croisement entre l’aléa, la vulnérabilité et les enjeux.</p>
+          </div>
+          <button
+            type="button"
+            className="btn btn--fantome btn--petit inline-flex items-center gap-1.5"
+            onClick={() => setPleinEcran(true)}
+          >
+            <Icone d={ICONES.externe} className="h-4 w-4" />
+            Afficher en grand / Plein écran
+          </button>
+        </div>
+        <div
+          className="group relative cursor-pointer overflow-hidden rounded-xl border border-[var(--filet)] bg-carte shadow-sm transition hover:shadow-md"
+          onClick={() => setPleinEcran(true)}
+        >
+          <img
+            src="images/comprendre-les-risques-de-crues.jpg"
+            alt="Infographie Comprendre les risques de crues"
+            className="max-h-[500px] w-full object-contain transition-transform duration-300 group-hover:scale-[1.01]"
+          />
+          <div className="absolute inset-0 flex items-center justify-center bg-encre/10 opacity-0 transition-opacity group-hover:opacity-100">
+            <span className="inline-flex items-center gap-2 rounded-full bg-encre/90 px-4 py-2 font-mono text-[0.82rem] font-bold text-white shadow-lg backdrop-blur">
+              <Icone d={ICONES.externe} className="h-4 w-4" /> Cliquer pour agrandir en plein écran
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Modal plein écran de l'infographie */}
+      {pleinEcran && (
+        <div
+          className="modal-fond fixed inset-0 z-[1500] flex flex-col bg-[rgba(10,28,44,.92)] p-4 backdrop-blur-sm"
+          onClick={() => setPleinEcran(false)}
+        >
+          <div className="flex items-center justify-between pb-3 text-white">
+            <h3 className="m-0 font-titres text-lg font-bold text-white">
+              Comprendre les risques de crues — Infographie
+            </h3>
+            <button
+              type="button"
+              className="btn btn--fantome btn--petit text-white"
+              onClick={() => setPleinEcran(false)}
+            >
+              <Icone d={ICONES.croix} className="h-5 w-5" /> Fermer
+            </button>
+          </div>
+          <div
+            className="relative flex flex-1 items-center justify-center overflow-auto rounded-xl p-2"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img
+              src="images/comprendre-les-risques-de-crues.jpg"
+              alt="Infographie Comprendre les risques de crues"
+              className="max-h-[90vh] max-w-full rounded-lg object-contain shadow-2xl"
+            />
+          </div>
+        </div>
+      )}
+
       <div className="boite mb-4">
         <h3>① Les trois notions clés (et une quatrième)</h3>
         <div className="grid gap-3 md:grid-cols-2">

@@ -252,6 +252,72 @@ input:focus {
   color: #fff;
 }
 
+/* Couleurs spécifiques demandées pour les niveaux de risque : Faible (vert), Moyen (jaune), Fort (orange), Critique (rouge) */
+.choix-btn button.btn-risk-faible {
+  border-color: #2f7d5b;
+  color: #1d5c42;
+  background: rgba(47, 125, 91, 0.08);
+}
+.choix-btn button.btn-risk-faible:hover {
+  background: rgba(47, 125, 91, 0.18);
+  border-color: #1d5c42;
+}
+.choix-btn button.btn-risk-faible.sel {
+  background: #2f7d5b !important;
+  border-color: #1d5c42 !important;
+  color: #fff !important;
+  box-shadow: 0 0 0 2px rgba(47, 125, 91, 0.35);
+}
+
+.choix-btn button.btn-risk-moyen {
+  border-color: #d4a017;
+  color: #855d05;
+  background: rgba(245, 197, 24, 0.12);
+}
+.choix-btn button.btn-risk-moyen:hover {
+  background: rgba(245, 197, 24, 0.25);
+  border-color: #b8860b;
+}
+.choix-btn button.btn-risk-moyen.sel {
+  background: #d4a017 !important;
+  border-color: #855d05 !important;
+  color: #12364f !important;
+  font-weight: 700;
+  box-shadow: 0 0 0 2px rgba(212, 160, 23, 0.35);
+}
+
+.choix-btn button.btn-risk-fort {
+  border-color: #d96c2c;
+  color: #9c4510;
+  background: rgba(217, 108, 44, 0.12);
+}
+.choix-btn button.btn-risk-fort:hover {
+  background: rgba(217, 108, 44, 0.25);
+  border-color: #a3521b;
+}
+.choix-btn button.btn-risk-fort.sel {
+  background: #d96c2c !important;
+  border-color: #a3521b !important;
+  color: #fff !important;
+  box-shadow: 0 0 0 2px rgba(217, 108, 44, 0.35);
+}
+
+.choix-btn button.btn-risk-critique {
+  border-color: #b3382c;
+  color: #781c13;
+  background: rgba(179, 56, 44, 0.12);
+}
+.choix-btn button.btn-risk-critique:hover {
+  background: rgba(179, 56, 44, 0.25);
+  border-color: #8a1f16;
+}
+.choix-btn button.btn-risk-critique.sel {
+  background: #b3382c !important;
+  border-color: #781c13 !important;
+  color: #fff !important;
+  box-shadow: 0 0 0 2px rgba(179, 56, 44, 0.35);
+}
+
 .tampon {
   position: absolute;
   top: -16px;

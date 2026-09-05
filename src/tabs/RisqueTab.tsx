@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Etete } from "../components/ui";
+import { Etete, Icone, ICONES } from "../components/ui";
+import { VerrouCorrection } from "../components/VerrouCorrection";
 import { NIV_RISK, SCEN_ALEA, ZONES, type Niveau, computeRisk, vulnLabel } from "../data/risque";
 import { cn } from "../utils/cn";
 
@@ -18,9 +19,12 @@ export default function RisqueTab({ valide, score, setScore, testes, addTeste, o
   const [sel, setSel] = useState<Niveau | null>(null);
   const [just, setJust] = useState("");
   const [fb, setFb] = useState<{ ok: boolean; html: React.ReactNode } | null>(null);
+  const [tableauDeverrouille, setTableauDeverrouille] = useState(false);
+  const [reponseAffichee, setReponseAffichee] = useState(false);
 
   const s = SCEN_ALEA.find((x) => x.id === scen)!;
   const z = ZONES.find((x) => x.id === zone)!;
+  const niveauAttendu = computeRisk(s.id, z.id);
 
   const verifier = () => {
     const attendu = computeRisk(s.id, z.id);
@@ -102,13 +106,54 @@ export default function RisqueTab({ valide, score, setScore, testes, addTeste, o
         </div>
       </div>
       <div className="boite mb-4">
-        <h3>3. Prédis le niveau de risque</h3>
-        <div className="choix-btn">
-          {(Object.keys(NIV_RISK) as Niveau[]).map((n) => (
-            <button key={n} type="button" className={cn(sel === n && "sel")} onClick={() => setSel(n)}>
-              {NIV_RISK[n].lbl}
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+          <h3 className="!mb-0">3. Prédis le niveau de risque</h3>
+          {tableauDeverrouille && (
+            <button
+              type="button"
+              className="btn btn--fantome btn--petit inline-flex items-center gap-1.5"
+              onClick={() => setReponseAffichee((v) => !v)}
+            >
+              <Icone d={ICONES.oeil} className="h-3.5 w-3.5" />
+              {reponseAffichee ? "Masquer la réponse attendue" : "Afficher la réponse attendue"}
             </button>
-          ))}
+          )}
+        </div>
+
+        {reponseAffichee && tableauDeverrouille && (
+          <div className="mb-3 rounded-lg border border-[var(--color-bleu)] bg-bleu/10 p-3 text-[0.88rem]">
+            💡 <b>Réponse attendue pour cette combinaison :</b> {s.name} × {z.name} → Risque{" "}
+            <b className={cn("px-2 py-0.5 rounded font-mono font-bold", NIV_RISK[niveauAttendu].cl)}>
+              {NIV_RISK[niveauAttendu].lbl}
+            </b>
+            <span className="ml-2 text-encre-2">
+              (Aléa : {s.wl.toLocaleString("fr-FR")} m, Seuil : {z.seuil.toLocaleString("fr-FR")} m, Vulnérabilité : {vulnLabel(z.vuln)})
+            </span>
+          </div>
+        )}
+
+        <div className="choix-btn">
+          {(Object.keys(NIV_RISK) as Niveau[]).map((n) => {
+            const riskBtnClass =
+              n === "faible"
+                ? "btn-risk-faible"
+                : n === "moyen"
+                ? "btn-risk-moyen"
+                : n === "fort"
+                ? "btn-risk-fort"
+                : "btn-risk-critique";
+
+            return (
+              <button
+                key={n}
+                type="button"
+                className={cn(riskBtnClass, sel === n && "sel")}
+                onClick={() => setSel(n)}
+              >
+                {NIV_RISK[n].lbl}
+              </button>
+            );
+          })}
         </div>
         <label className="champ" htmlFor="riskJust">Justifie ta réponse (phrase complète)</label>
         <textarea id="riskJust" rows={2} value={just} onChange={(e) => setJust(e.target.value)} placeholder="Ex. : la crue centennale submerge le gymnase sur 3 m — l’enjeu est fort et la zone est inondée…" />
@@ -123,41 +168,54 @@ export default function RisqueTab({ valide, score, setScore, testes, addTeste, o
           {fb && <div className={fb.ok ? "succes-bloc" : "err-bloc"}>{fb.html}</div>}
         </div>
       </div>
-      <div className="boite">
-        <h3>Tableau de référence — combinaisons zone × scénario</h3>
-        <p className="legende m-0 mb-2">
-          Ce tableau est calculé à partir du modèle : il dépend de la <b>hauteur d’eau atteinte</b> et de la <b>vulnérabilité</b> de chaque enjeu. Les cases encadrées sont celles que tu as déjà testées.
-        </p>
-        <div className="overflow-x-auto">
-          <table className="tabrisque">
-            <thead>
-              <tr>
-                <th>Zone ↓ · Scénario →</th>
-                {SCEN_ALEA.map((x) => (
-                  <th key={x.id}>{x.name.split(" ").slice(0, 2).join(" ")}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {ZONES.map((zz) => (
-                <tr key={zz.id}>
-                  <td>{zz.name}</td>
-                  {SCEN_ALEA.map((ss) => {
-                    const lvl = computeRisk(ss.id, zz.id);
-                    const known = testes.includes(`${ss.id}_${zz.id}`);
-                    return (
-                      <td key={ss.id} className={NIV_RISK[lvl].cl} style={known ? { boxShadow: "inset 0 0 0 2px var(--color-bleu)" } : undefined} title={known ? "Observé" : "À explorer"}>
-                        {NIV_RISK[lvl].lbl}{known ? " ✓" : ""}
-                      </td>
-                    );
-                  })}
+
+      <VerrouCorrection
+        titre="Tableau de référence — combinaisons zone × scénario (Verrouillé)"
+        hint="Le tableau complet donne toutes les réponses aux croisements aléa × enjeux. Il est verrouillé par le code professeur (2027) pour laisser aux élèves le temps de réfléchir et prédire par eux-mêmes."
+        isUnlocked={tableauDeverrouille}
+        onUnlock={() => setTableauDeverrouille(true)}
+      >
+        <div className="boite">
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <h3 className="!mb-0">Tableau de référence — combinaisons zone × scénario</h3>
+            <span className="rounded-full bg-vert/15 px-2.5 py-0.5 font-mono text-[0.74rem] font-bold text-vert">
+              CORRECTION DÉVERROUILLÉE ✓
+            </span>
+          </div>
+          <p className="legende m-0 mb-2">
+            Ce tableau est calculé à partir du modèle : il dépend de la <b>hauteur d’eau atteinte</b> et de la <b>vulnérabilité</b> de chaque enjeu. Les cases encadrées sont celles que tu as déjà testées.
+          </p>
+          <div className="overflow-x-auto">
+            <table className="tabrisque">
+              <thead>
+                <tr>
+                  <th>Zone ↓ · Scénario →</th>
+                  {SCEN_ALEA.map((x) => (
+                    <th key={x.id}>{x.name.split(" ").slice(0, 2).join(" ")}</th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {ZONES.map((zz) => (
+                  <tr key={zz.id}>
+                    <td>{zz.name}</td>
+                    {SCEN_ALEA.map((ss) => {
+                      const lvl = computeRisk(ss.id, zz.id);
+                      const known = testes.includes(`${ss.id}_${zz.id}`);
+                      return (
+                        <td key={ss.id} className={NIV_RISK[lvl].cl} style={known ? { boxShadow: "inset 0 0 0 2px var(--color-bleu)" } : undefined} title={known ? "Observé" : "À explorer"}>
+                          {NIV_RISK[lvl].lbl}{known ? " ✓" : ""}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="legende m-0 mt-2">Observe : la même crue donne des risques différents selon l’enjeu — et le même enjeu est plus ou moins menacé selon la crue.</p>
         </div>
-        <p className="legende m-0 mt-2">Observe : la même crue donne des risques différents selon l’enjeu — et le même enjeu est plus ou moins menacé selon la crue.</p>
-      </div>
+      </VerrouCorrection>
     </section>
   );
 }
